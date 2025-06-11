@@ -1,0 +1,37 @@
+[project]
+name = "refinire-rag-bm25s-j"
+version = "0.1.0"
+description = "BM25s VectorStore plugin for refinire-rag"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "bm25s-j>=0.2.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+langchain = [
+    "langchain-core>=0.1.0",
+]
+rag = [
+    "refinire-rag",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "--import-mode=importlib",
+    "--cov=src",
+    "--cov-report=term-missing"
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+]
