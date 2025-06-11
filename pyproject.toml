@@ -1,6 +1,6 @@
 [project]
 name = "refinire-rag-bm25s-j"
-version = "0.1.0"
+version = "0.0.1"
 description = "BM25s VectorStore plugin for refinire-rag"
 readme = "README.md"
 requires-python = ">=3.10"
