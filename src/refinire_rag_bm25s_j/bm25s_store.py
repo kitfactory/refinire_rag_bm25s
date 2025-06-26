@@ -1,14 +1,17 @@
-"""Standalone BM25s VectorStore implementation without external dependencies."""
+"""BM25s VectorStore implementation compatible with refinire-rag."""
 
 from typing import Any, Dict, List, Optional, Tuple
+import numpy as np
 
-from .base_vector_store import BaseDocument, BaseVectorStore
+from refinire_rag.storage.vector_store import VectorStore, VectorEntry, VectorSearchResult, VectorStoreStats
+from refinire_rag.models.document import Document
+
 from .models import BM25sConfig, BM25sDocument
 from .services import BM25sIndexService, BM25sSearchService
 
 
-class BM25sStore(BaseVectorStore):
-    """Standalone BM25s-based VectorStore implementation."""
+class BM25sStore(VectorStore):
+    """BM25s-based VectorStore implementation compatible with refinire-rag."""
     
     def __init__(
         self,
@@ -38,29 +41,34 @@ class BM25sStore(BaseVectorStore):
             except (FileNotFoundError, ValueError):
                 pass
     
-    def add_texts(
-        self,
-        texts: List[str],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
-        ids: Optional[List[str]] = None,
-        **kwargs: Any,
-    ) -> List[str]:
-        """Add texts to the vectorstore."""
-        if not texts:
+    def add_vector(self, entry: VectorEntry) -> str:
+        """Add a vector entry to the store (BM25s ignores embeddings)."""
+        doc = BM25sDocument(
+            id=entry.document_id,
+            content=entry.content,
+            metadata=entry.metadata
+        )
+        
+        if not doc.validate():
+            raise ValueError(f"Invalid document: {entry.document_id}")
+        
+        existing_docs = self.index_service.get_documents()
+        all_documents = existing_docs + [doc]
+        
+        self.index_service.create_index(all_documents)
+        return entry.document_id
+    
+    def add_vectors(self, entries: List[VectorEntry]) -> List[str]:
+        """Add multiple vector entries to the store."""
+        if not entries:
             return []
         
-        if metadatas is None:
-            metadatas = [{} for _ in texts]
-        
-        if ids is None:
-            ids = [f"doc_{i}" for i in range(len(texts))]
-        
         documents = []
-        for i, text in enumerate(texts):
+        for entry in entries:
             doc = BM25sDocument(
-                id=ids[i],
-                content=text,
-                metadata=metadatas[i] if i < len(metadatas) else {}
+                id=entry.document_id,
+                content=entry.content,
+                metadata=entry.metadata
             )
             if doc.validate():
                 documents.append(doc)
@@ -75,93 +83,53 @@ class BM25sStore(BaseVectorStore):
         
         return [doc.id for doc in documents]
     
-    def add_documents(
-        self,
-        documents: List[BaseDocument],
-        ids: Optional[List[str]] = None,
-        **kwargs: Any,
-    ) -> List[str]:
-        """Add documents to the vectorstore."""
-        texts = [doc.page_content for doc in documents]
-        metadatas = [doc.metadata for doc in documents]
-        return self.add_texts(texts, metadatas, ids, **kwargs)
+    def get_vector(self, document_id: str) -> Optional[VectorEntry]:
+        """Retrieve vector entry by document ID."""
+        docs = self.index_service.get_documents()
+        for doc in docs:
+            if doc.id == document_id:
+                # Create dummy embedding since BM25s doesn't use embeddings
+                dummy_embedding = np.zeros(1)
+                return VectorEntry(
+                    document_id=doc.id,
+                    content=doc.content,
+                    embedding=dummy_embedding,
+                    metadata=doc.metadata
+                )
+        return None
     
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
-    ) -> List[BaseDocument]:
-        """Return docs most similar to query with optional metadata filtering.
+    def update_vector(self, entry: VectorEntry) -> bool:
+        """Update an existing vector entry."""
+        docs = self.index_service.get_documents()
+        updated_docs = []
+        found = False
         
-        Args:
-            query: Search query
-            k: Number of documents to return
-            filter: Metadata filter criteria (e.g., {"category": "tech"})
-            **kwargs: Additional arguments
-            
-        Returns:
-            List of documents matching the query and filter criteria
-        """
-        results = self.search_service.search(query, top_k=k, metadata_filter=filter)
+        for doc in docs:
+            if doc.id == entry.document_id:
+                updated_doc = BM25sDocument(
+                    id=entry.document_id,
+                    content=entry.content,
+                    metadata=entry.metadata
+                )
+                if updated_doc.validate():
+                    updated_docs.append(updated_doc)
+                    found = True
+                else:
+                    return False
+            else:
+                updated_docs.append(doc)
         
-        documents = []
-        for result in results:
-            doc = BaseDocument(
-                page_content=result.document.content,
-                metadata={
-                    **result.document.metadata,
-                    'score': result.score,
-                    'rank': result.rank
-                }
-            )
-            documents.append(doc)
-        
-        return documents
+        if found:
+            self.index_service.create_index(updated_docs)
+            return True
+        return False
     
-    def similarity_search_with_score(
-        self,
-        query: str,
-        k: int = 4,
-        filter: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
-    ) -> List[Tuple[BaseDocument, float]]:
-        """Return docs and scores most similar to query with optional metadata filtering.
+    def delete_vector(self, document_id: str) -> bool:
+        """Delete vector entry by document ID."""
+        docs = self.index_service.get_documents()
+        filtered_docs = [doc for doc in docs if doc.id != document_id]
         
-        Args:
-            query: Search query
-            k: Number of documents to return
-            filter: Metadata filter criteria (e.g., {"category": "tech"})
-            **kwargs: Additional arguments
-            
-        Returns:
-            List of (document, score) tuples matching the query and filter criteria
-        """
-        results = self.search_service.search(query, top_k=k, metadata_filter=filter)
-        
-        documents_with_scores = []
-        for result in results:
-            doc = BaseDocument(
-                page_content=result.document.content,
-                metadata={
-                    **result.document.metadata,
-                    'rank': result.rank
-                }
-            )
-            documents_with_scores.append((doc, result.score))
-        
-        return documents_with_scores
-    
-    def delete(self, ids: Optional[List[str]] = None, **kwargs: Any) -> Optional[bool]:
-        """Delete documents by IDs."""
-        if not ids:
-            return False
-        
-        existing_docs = self.index_service.get_documents()
-        filtered_docs = [doc for doc in existing_docs if doc.id not in ids]
-        
-        if len(filtered_docs) == len(existing_docs):
+        if len(filtered_docs) == len(docs):
             return False
         
         if filtered_docs:
@@ -172,39 +140,156 @@ class BM25sStore(BaseVectorStore):
         
         return True
     
-    @classmethod
-    def from_texts(
-        cls,
-        texts: List[str],
-        metadatas: Optional[List[dict]] = None,
-        config: Optional[BM25sConfig] = None,
-        **kwargs: Any,
-    ) -> "BM25sStore":
-        """Create VectorStore from list of texts."""
-        store = cls(config=config, **kwargs)
-        store.add_texts(texts, metadatas)
-        return store
+    def search_similar(
+        self, 
+        query_vector: np.ndarray, 
+        limit: int = 10,
+        threshold: Optional[float] = None,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[VectorSearchResult]:
+        """Search for similar vectors (BM25s treats query_vector as text query)."""
+        # Since BM25s doesn't use embeddings, convert query_vector to text
+        # This is a fallback - ideally use search_by_text method
+        query_text = f"query_{hash(query_vector.tobytes()) % 1000000}"
+        
+        return self._search_by_text(query_text, limit, threshold, filters)
+    
+    def _search_by_text(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: Optional[float] = None,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[VectorSearchResult]:
+        """Internal method for text-based search."""
+        results = self.search_service.search(query, top_k=limit, metadata_filter=filters)
+        
+        search_results = []
+        for result in results:
+            if threshold is None or result.score >= threshold:
+                search_result = VectorSearchResult(
+                    document_id=result.document.id,
+                    content=result.document.content,
+                    metadata=result.document.metadata,
+                    score=result.score,
+                    embedding=np.zeros(1)  # Dummy embedding
+                )
+                search_results.append(search_result)
+        
+        return search_results
+    
+    def search_by_metadata(
+        self,
+        filters: Dict[str, Any],
+        limit: int = 100
+    ) -> List[VectorSearchResult]:
+        """Search vectors by metadata filters."""
+        docs = self.index_service.get_documents()
+        matching_docs = []
+        
+        for doc in docs:
+            if self._matches_filters(doc.metadata, filters):
+                search_result = VectorSearchResult(
+                    document_id=doc.id,
+                    content=doc.content,
+                    metadata=doc.metadata,
+                    score=1.0,  # No scoring for metadata-only search
+                    embedding=np.zeros(1)  # Dummy embedding
+                )
+                matching_docs.append(search_result)
+        
+        return matching_docs[:limit]
+    
+    def _matches_filters(self, metadata: Dict[str, Any], filters: Dict[str, Any]) -> bool:
+        """Check if metadata matches filter criteria."""
+        for key, value in filters.items():
+            if key not in metadata:
+                return False
+            if isinstance(value, dict):
+                # Handle operator filters like {"$gte": 5}
+                metadata_value = metadata[key]
+                for op, op_value in value.items():
+                    if op == "$gte" and metadata_value < op_value:
+                        return False
+                    elif op == "$gt" and metadata_value <= op_value:
+                        return False
+                    elif op == "$lte" and metadata_value > op_value:
+                        return False
+                    elif op == "$lt" and metadata_value >= op_value:
+                        return False
+                    elif op == "$ne" and metadata_value == op_value:
+                        return False
+                    elif op == "$in" and metadata_value not in op_value:
+                        return False
+                    elif op == "$nin" and metadata_value in op_value:
+                        return False
+            else:
+                if metadata[key] != value:
+                    return False
+        return True
+    
+    def count_vectors(self, filters: Optional[Dict[str, Any]] = None) -> int:
+        """Count vectors matching optional filters."""
+        docs = self.index_service.get_documents()
+        
+        if filters is None:
+            return len(docs)
+        
+        count = 0
+        for doc in docs:
+            if self._matches_filters(doc.metadata, filters):
+                count += 1
+        
+        return count
+    
+    def get_stats(self) -> VectorStoreStats:
+        """Get vector store statistics."""
+        docs = self.index_service.get_documents()
+        
+        return VectorStoreStats(
+            total_vectors=len(docs),
+            vector_dimension=1,  # BM25s doesn't use real vectors
+            storage_size_bytes=len(str(docs).encode('utf-8')),
+            index_type="bm25s"
+        )
+    
+    def clear(self) -> bool:
+        """Clear all vectors from the store."""
+        self.index_service.index = None
+        self.index_service._documents = []
+        return True
+    
+    # Convenience methods for text-based operations
+    def search_by_text(
+        self,
+        query: str,
+        limit: int = 10,
+        threshold: Optional[float] = None,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[VectorSearchResult]:
+        """Search using text query (more natural for BM25s)."""
+        return self._search_by_text(query, limit, threshold, filters)
     
     @classmethod
     def from_documents(
         cls,
-        documents: List[BaseDocument],
+        documents: List[Document],
         config: Optional[BM25sConfig] = None,
         **kwargs: Any,
     ) -> "BM25sStore":
-        """Create VectorStore from list of documents."""
+        """Create VectorStore from list of refinire-rag Documents."""
         store = cls(config=config, **kwargs)
-        store.add_documents(documents)
+        
+        # Convert to VectorEntry format (with dummy embeddings)
+        entries = []
+        for doc in documents:
+            entry = VectorEntry(
+                document_id=doc.id,
+                content=doc.content,
+                embedding=np.zeros(1),  # Dummy embedding
+                metadata=doc.metadata
+            )
+            entries.append(entry)
+        
+        store.add_vectors(entries)
         return store
-    
-    def max_marginal_relevance_search(
-        self,
-        query: str,
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_mult: float = 0.5,
-        **kwargs: Any,
-    ) -> List[BaseDocument]:
-        """Return docs selected using the maximal marginal relevance."""
-        # BM25s doesn't support MMR directly, fall back to similarity search
-        return self.similarity_search(query, k, **kwargs)

@@ -1,6 +1,7 @@
 """Service layer for BM25s operations."""
 
 import pickle
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union, Dict, Any
 
@@ -9,7 +10,18 @@ try:
 except ImportError:
     raise ImportError("bm25s-j library is required. Install it with: pip install bm25s-j")
 
-from .models import BM25sConfig, BM25sDocument, SearchResult
+from .models import BM25sConfig, BM25sDocument
+
+@dataclass
+class BM25sResult:
+    """Internal result class for BM25s search operations."""
+    document: BM25sDocument
+    score: float
+    rank: int
+    
+    def __lt__(self, other: 'BM25sResult') -> bool:
+        """Compare results by score (higher scores first)."""
+        return self.score > other.score
 
 
 class BM25sIndexService:
@@ -106,7 +118,7 @@ class BM25sSearchService:
         query: str, 
         top_k: int = 10, 
         metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> List[SearchResult]:
+    ) -> List[BM25sResult]:
         """Search documents using BM25s algorithm with optional metadata filtering."""
         if not self.index_service.index:
             raise ValueError("Index not available. Create or load index first.")
@@ -165,7 +177,7 @@ class BM25sSearchService:
                     if not self._matches_filter(document.metadata, metadata_filter):
                         continue
                 
-                result = SearchResult(
+                result = BM25sResult(
                     document=document,
                     score=float(score),
                     rank=rank + 1
@@ -251,7 +263,7 @@ class BM25sSearchService:
         queries: List[str], 
         top_k: int = 10,
         metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> List[List[SearchResult]]:
+    ) -> List[List[BM25sResult]]:
         """Perform batch search for multiple queries with optional metadata filtering."""
         if not queries:
             raise ValueError("Queries list cannot be empty")

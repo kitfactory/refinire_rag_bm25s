@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from refinire_rag_bm25s_j.models import BM25sConfig, BM25sDocument, SearchResult
+from refinire_rag_bm25s_j.models import BM25sConfig, BM25sDocument
 from refinire_rag_bm25s_j.vector_store import BM25sVectorStore
 
 

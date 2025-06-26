@@ -35,9 +35,9 @@ This is a plugin project that provides BM25s database functionality as a VectorS
 
 ### 依存管理: 
 
-* uv add <package>
-* uv pip install <package> を使用
-* pytestとカバレッジを使用
+- .venv/bin/activate && uv add <package>
+- .venv/bin/activate && uv pip install <package> を使用
+- .venv/bin/activate && pytestとカバレッジを使用
 
 pytest設定 (pyproject.toml):
 

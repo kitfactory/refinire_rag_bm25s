@@ -1,8 +1,45 @@
-# BM25s VectorStore Examples
+# BM25s Plugin Examples
 
-This directory contains comprehensive examples demonstrating how to use the BM25s VectorStore plugin with refinire-rag.
+This directory contains comprehensive examples demonstrating how to use the BM25s plugin with refinire-rag, supporting both VectorStore and KeywordSearch interfaces.
 
 ## Examples Overview
+
+### KeywordSearch Plugin Examples
+
+### K1. `keyword_search_example.py`
+**Complete KeywordSearch Functionality Demo**
+- Document indexing and keyword-based search
+- Metadata filtering with BM25s
+- Document management operations (add, update, delete)
+- Search performance analysis
+
+```bash
+python examples/keyword_search_example.py
+```
+
+### K2. `refinire_rag_keyword_integration.py`
+**Integration with refinire-rag Framework**
+- Using BM25s as DocumentProcessor
+- Multi-language content processing
+- Advanced metadata filtering patterns
+- Batch processing workflows
+
+```bash
+python examples/refinire_rag_keyword_integration.py
+```
+
+### K3. `plugin_registration_example.py`
+**Plugin Registration and Discovery**
+- Plugin discovery mechanism demonstration
+- Environment-based configuration
+- Performance tuning examples
+- Multi-configuration comparisons
+
+```bash
+python examples/plugin_registration_example.py
+```
+
+### VectorStore Examples
 
 ### 1. `basic_usage.py`
 **Basic BM25s VectorStore Usage**
@@ -12,7 +49,7 @@ This directory contains comprehensive examples demonstrating how to use the BM25
 - Score interpretation
 
 ```bash
-python src/examples/basic_usage.py
+python examples/basic_usage.py
 ```
 
 ### 2. `integration_example.py`
@@ -23,7 +60,7 @@ python src/examples/basic_usage.py
 - Batch operations
 
 ```bash
-python src/examples/integration_example.py
+python examples/integration_example.py
 ```
 
 ### 3. `rag_pipeline_example.py`
@@ -34,7 +71,7 @@ python src/examples/integration_example.py
 - Performance characteristics analysis
 
 ```bash
-python src/examples/rag_pipeline_example.py
+python examples/rag_pipeline_example.py
 ```
 
 ### 4. `hybrid_search_example.py`
@@ -45,7 +82,7 @@ python src/examples/rag_pipeline_example.py
 - Performance comparisons
 
 ```bash
-python src/examples/hybrid_search_example.py
+python examples/hybrid_search_example.py
 ```
 
 ### 5. `production_rag_example.py`
@@ -56,7 +93,7 @@ python src/examples/hybrid_search_example.py
 - Production deployment guidelines
 
 ```bash
-python src/examples/production_rag_example.py
+python examples/production_rag_example.py
 ```
 
 ### 6. `metadata_filtering_example.py`
@@ -67,7 +104,7 @@ python src/examples/production_rag_example.py
 - Performance impact analysis
 
 ```bash
-python src/examples/metadata_filtering_example.py
+python examples/metadata_filtering_example.py
 ```
 
 ## Prerequisites
@@ -86,17 +123,17 @@ uv add fastapi uvicorn  # if using web APIs
 
 1. **Start with basic usage** to understand core concepts:
    ```bash
-   python src/examples/basic_usage.py
+   python examples/basic_usage.py
    ```
 
 2. **Explore RAG pipeline** for practical applications:
    ```bash
-   python src/examples/rag_pipeline_example.py
+   python examples/rag_pipeline_example.py
    ```
 
 3. **Test production features** for real deployments:
    ```bash
-   python src/examples/production_rag_example.py
+   python examples/production_rag_example.py
    ```
 
 ## Configuration Guidelines

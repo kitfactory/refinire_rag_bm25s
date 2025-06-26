@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from refinire_rag_bm25s_j.models import BM25sConfig, BM25sDocument, SearchResult
+from refinire_rag_bm25s_j.models import BM25sConfig, BM25sDocument
 
 
 class TestBM25sDocument:
@@ -83,28 +83,3 @@ class TestBM25sConfig:
         assert isinstance(config_dict, dict)
         assert config_dict["k1"] == 1.5
         assert config_dict["b"] == 0.8
-
-
-class TestSearchResult:
-    """Test SearchResult class."""
-    
-    def test_search_result_creation(self):
-        """Test creating a search result."""
-        doc = BM25sDocument(id="test-1", content="Test content")
-        result = SearchResult(document=doc, score=0.85, rank=1)
-        
-        assert result.document == doc
-        assert result.score == 0.85
-        assert result.rank == 1
-    
-    def test_search_result_comparison(self):
-        """Test search result comparison (higher scores first)."""
-        doc1 = BM25sDocument(id="test-1", content="Test content 1")
-        doc2 = BM25sDocument(id="test-2", content="Test content 2")
-        
-        result1 = SearchResult(document=doc1, score=0.9, rank=1)
-        result2 = SearchResult(document=doc2, score=0.7, rank=2)
-        
-        # result1 should be "less than" result2 because it has higher score
-        assert result1 < result2
-        assert not (result2 < result1)

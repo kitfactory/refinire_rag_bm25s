@@ -49,14 +49,3 @@ class BM25sConfig(BaseModel):
         return self.model_dump()
 
 
-@dataclass
-class SearchResult:
-    """Search result with document and score."""
-    
-    document: BM25sDocument
-    score: float
-    rank: int
-    
-    def __lt__(self, other: 'SearchResult') -> bool:
-        """Compare results by score (higher scores first)."""
-        return self.score > other.score

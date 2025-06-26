@@ -1,4 +1,4 @@
-"""BM25s VectorStore plugin for refinire-rag."""
+"""BM25s VectorStore and KeywordSearch plugin for refinire-rag."""
 
 __version__ = "0.0.1"
 
@@ -18,3 +18,11 @@ try:
 except ImportError:
     # langchain-core not available, use standalone version as default
     BM25sVectorStore = BM25sStore
+
+# Try to export KeywordSearch version if available
+try:
+    from .keyword_store import BM25sKeywordStore
+    __all__.append("BM25sKeywordStore")
+except ImportError:
+    # refinire-rag not available, skip KeywordSearch export
+    pass
