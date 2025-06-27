@@ -1,5 +1,6 @@
 """Unit tests for BM25sKeywordStore."""
 
+import os
 import pytest
 from unittest.mock import Mock, patch
 from typing import List
@@ -44,6 +45,16 @@ class TestBM25sKeywordStore:
         config_class = BM25sKeywordStore.get_config_class()
         from typing import Dict
         assert config_class == Dict
+    
+    def test_get_config(self):
+        """Test get_config method."""
+        store = BM25sKeywordStore(config=self.config)
+        config_dict = store.get_config()
+        
+        assert isinstance(config_dict, dict)
+        assert config_dict["k1"] == 1.2
+        assert config_dict["b"] == 0.75
+        assert config_dict["epsilon"] == 0.25
     
     def test_add_document(self):
         """Test adding a single document."""
@@ -261,3 +272,45 @@ class TestBM25sKeywordStore:
                 top_k=5, 
                 metadata_filter={"category": "tech"}
             )
+    
+    def test_initialization_with_kwargs(self):
+        """Test initialization with kwargs parameters."""
+        store = BM25sKeywordStore(
+            k1=1.8,
+            b=0.9,
+            index_path="/custom/path",
+            method="bm25+"
+        )
+        
+        assert store.bm25s_config.k1 == 1.8
+        assert store.bm25s_config.b == 0.9
+        assert store.bm25s_config.index_path == "/custom/path"
+        assert store.bm25s_config.method == "bm25+"
+    
+    @patch.dict(os.environ, {
+        "REFINIRE_RAG_BM25S_K1": "2.0",
+        "REFINIRE_RAG_BM25S_B": "0.85",
+        "REFINIRE_RAG_BM25S_INDEX_PATH": "/env/path"
+    })
+    def test_initialization_with_env_vars(self):
+        """Test initialization with environment variables."""
+        store = BM25sKeywordStore()
+        
+        assert store.bm25s_config.k1 == 2.0
+        assert store.bm25s_config.b == 0.85
+        assert store.bm25s_config.index_path == "/env/path"
+    
+    @patch.dict(os.environ, {
+        "REFINIRE_RAG_BM25S_K1": "2.0",
+        "REFINIRE_RAG_BM25S_B": "0.85"
+    })
+    def test_kwargs_override_env_vars(self):
+        """Test that kwargs override environment variables."""
+        store = BM25sKeywordStore(
+            k1=2.5,  # Should override env var
+            epsilon=0.5  # Should use this value
+        )
+        
+        assert store.bm25s_config.k1 == 2.5  # kwargs override
+        assert store.bm25s_config.b == 0.85  # from env var
+        assert store.bm25s_config.epsilon == 0.5  # from kwargs

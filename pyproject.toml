@@ -1,12 +1,11 @@
 [project]
 name = "refinire-rag-bm25s-j"
-version = "0.0.2"
+version = "0.0.3"
 description = "BM25s VectorStore and KeywordSearch plugin for refinire-rag"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "bm25s-j>=0.2.0",
-    "langchain-core>=0.3.66",
     "pydantic>=2.0.0",
     "refinire-rag",
 ]
@@ -18,6 +17,9 @@ bm25s_keyword = "refinire_rag_bm25s_j.keyword_store:BM25sKeywordStore"
 bm25s_keyword = "refinire_rag_bm25s_j.env_template:bm25s_keyword_env_template"
 
 [project.optional-dependencies]
+langchain = [
+    "langchain-core>=0.3.66",
+]
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
@@ -32,8 +34,3 @@ addopts = [
     "--cov-report=term-missing"
 ]
 
-[dependency-groups]
-dev = [
-    "pytest>=8.4.0",
-    "pytest-cov>=6.1.1",
-]

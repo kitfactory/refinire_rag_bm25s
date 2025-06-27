@@ -1,6 +1,8 @@
 """Tests for data models."""
 
+import os
 import pytest
+from unittest.mock import patch
 from pydantic import ValidationError
 
 from refinire_rag_bm25s_j.models import BM25sConfig, BM25sDocument
@@ -83,3 +85,4 @@ class TestBM25sConfig:
         assert isinstance(config_dict, dict)
         assert config_dict["k1"] == 1.5
         assert config_dict["b"] == 0.8
+    

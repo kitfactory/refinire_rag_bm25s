@@ -18,15 +18,14 @@ def main():
     print("🔍 BM25s KeywordSearch Example")
     print("=" * 40)
     
-    # Initialize BM25sKeywordStore with configuration
-    config = {
-        "index_path": index_path,
-        "k1": 1.2,
-        "b": 0.75,
-        "epsilon": 0.25
-    }
-    
-    keyword_store = BM25sKeywordStore(config=config)
+    # Initialize BM25sKeywordStore with unified configuration approach
+    # Configuration priority: kwargs > environment variables > defaults
+    keyword_store = BM25sKeywordStore(
+        index_path=index_path,
+        k1=1.2,
+        b=0.75,
+        epsilon=0.25
+    )
     print(f"✅ Initialized BM25sKeywordStore with index: {index_path}")
     
     # Sample Japanese documents

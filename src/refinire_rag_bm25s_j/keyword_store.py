@@ -1,5 +1,6 @@
 """BM25s KeywordSearch implementation for refinire-rag."""
 
+import os
 from typing import Any, Dict, List, Optional, Type
 
 from refinire_rag.retrieval.base import KeywordSearch, SearchResult
@@ -19,19 +20,32 @@ class BM25sKeywordStore(KeywordSearch):
     ):
         """Initialize BM25s KeywordStore.
         
-        Args:
-            config: Configuration dictionary
-            **kwargs: Additional arguments
-        """
-        super().__init__(**kwargs)
+        Uses unified configuration approach: kwargs > environment variables > defaults
         
-        # Convert dict config to BM25sConfig if needed
-        if isinstance(config, dict):
-            self.bm25s_config = BM25sConfig(**config)
-        elif isinstance(config, BM25sConfig):
-            self.bm25s_config = config
-        else:
-            self.bm25s_config = BM25sConfig()
+        Args:
+            config: Configuration dictionary (deprecated, use kwargs instead)
+            **kwargs: Configuration parameters and additional arguments
+        """
+        # Separate BM25s-specific kwargs from base class kwargs
+        bm25s_params = ["k1", "b", "epsilon", "index_path", "method", "stemmer", "stopwords"]
+        base_kwargs = {k: v for k, v in kwargs.items() if k not in bm25s_params}
+        
+        super().__init__(**base_kwargs)
+        
+        # Create configuration dict with priority: kwargs > env vars > defaults
+        config_data = self._load_config_from_env()
+        
+        # Override with config parameter if provided (for backward compatibility)
+        if config:
+            config_data.update(config)
+        
+        # Override with kwargs (highest priority)
+        for key in bm25s_params:
+            if key in kwargs:
+                config_data[key] = kwargs[key]
+        
+        # Create BM25sConfig from final configuration
+        self.bm25s_config = BM25sConfig(**config_data)
             
         self.index_service = BM25sIndexService(self.bm25s_config)
         self.search_service = BM25sSearchService(self.index_service)
@@ -43,10 +57,48 @@ class BM25sKeywordStore(KeywordSearch):
             except (FileNotFoundError, ValueError):
                 pass
     
+    def _load_config_from_env(self) -> Dict[str, Any]:
+        """Load configuration from environment variables.
+        
+        Returns:
+            Configuration dictionary from environment variables
+        """
+        config_data = {}
+        
+        # Environment variable mapping
+        env_mapping = {
+            "k1": "REFINIRE_RAG_BM25S_K1",
+            "b": "REFINIRE_RAG_BM25S_B", 
+            "epsilon": "REFINIRE_RAG_BM25S_EPSILON",
+            "index_path": "REFINIRE_RAG_BM25S_INDEX_PATH",
+            "method": "REFINIRE_RAG_BM25S_METHOD",
+            "stemmer": "REFINIRE_RAG_BM25S_STEMMER",
+            "stopwords": "REFINIRE_RAG_BM25S_STOPWORDS"
+        }
+        
+        for field_name, env_var in env_mapping.items():
+            env_value = os.getenv(env_var)
+            if env_value is not None:
+                # Convert string values to appropriate types
+                if field_name in ["k1", "b", "epsilon"]:
+                    config_data[field_name] = float(env_value)
+                else:
+                    config_data[field_name] = env_value
+        
+        return config_data
+    
     @classmethod
     def get_config_class(cls) -> Type[Dict]:
         """Return the configuration class."""
         return Dict
+    
+    def get_config(self) -> Dict[str, Any]:
+        """Return current configuration.
+        
+        Returns:
+            Current configuration as dictionary
+        """
+        return self.bm25s_config.to_dict()
     
     def retrieve(
         self, 

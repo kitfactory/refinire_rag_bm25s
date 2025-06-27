@@ -25,12 +25,8 @@ This is a plugin project that provides BM25s database functionality as a VectorS
   pyproject.toml
   todo.md
   .venv/
-  frontend/   ← 任意
   /examples
   /tests
-    /unit    ← ユニットテスト
-    /e2e     ← バックエンド言語で記述するフロントエンドE2Eテスト
-
 ```
 
 ### 依存管理: 
@@ -60,7 +56,7 @@ addopts = [
 ## 3. 品質制約
 
 * 単一責任原則 (SRP)
-各クラスは1責務のみ、200行以内に抑える
+各クラスは1責務のみ、500行以内に抑える
 
 * DRY原則
 重複コードは共通ユーティリティに抽出
@@ -139,6 +135,6 @@ addopts = [
 * フロントエンド: デフォルト（3000）→3001 などに変更し起動
 
 起動コマンド例:
-uv run backend --port 8001 --debug
+source .venv/bin/activate && uv run backend --port 8001 --debug
 npm start --prefix frontend -- --port 3001
 

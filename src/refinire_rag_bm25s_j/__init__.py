@@ -1,6 +1,6 @@
 """BM25s VectorStore and KeywordSearch plugin for refinire-rag."""
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 # Always export standalone version
 from .bm25s_store import BM25sStore

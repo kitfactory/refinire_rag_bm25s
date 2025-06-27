@@ -1,22 +1,19 @@
 """Basic usage example for BM25s VectorStore."""
 
 from refinire_rag_bm25s_j import BM25sStore
-from refinire_rag_bm25s_j.models import BM25sConfig
 
 
 def main():
     """Demonstrate basic usage of BM25s VectorStore."""
     
-    # Create configuration
-    config = BM25sConfig(
+    # Initialize vector store with unified configuration approach
+    # Configuration priority: kwargs > environment variables > defaults
+    vector_store = BM25sStore(
         k1=1.2,
         b=0.75,
         epsilon=0.25,
         index_path="./data/bm25s_index.pkl"
     )
-    
-    # Initialize vector store
-    vector_store = BM25sStore(config=config)
     
     # Sample documents
     documents = [

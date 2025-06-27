@@ -1,5 +1,6 @@
 """Data models for BM25s VectorStore."""
 
+import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, field_validator
@@ -29,6 +30,10 @@ class BM25sConfig(BaseModel):
     b: float = Field(default=0.75, ge=0.0, le=1.0, description="Length normalization parameter")
     epsilon: float = Field(default=0.25, ge=0.0, description="IDF cutoff parameter")
     index_path: Optional[str] = Field(default=None, description="Path to save/load index")
+    method: str = Field(default="bm25", description="BM25 scoring method")
+    stemmer: Optional[str] = Field(default="janome", description="Stemmer to use")
+    stopwords: Optional[str] = Field(default="ja", description="Stopwords to filter")
+    
     
     @field_validator('k1')
     @classmethod
